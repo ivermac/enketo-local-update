@@ -1,0 +1,45 @@
+---
+- name: Update enketo using upstream
+  hosts: localhost
+
+  tasks:
+    - name: check enketo already exists
+      stat:
+        path: "{{ enketo_path }}"
+      register: enketo_path_exists
+
+    - include_tasks: update-enketo.yaml
+      when: enketo_path_exists.stat.exists
+
+    - block:
+      - name: enketo's path DOES NOT exist
+        shell: echo "enketo's path DOES NOT exist"
+
+      - name: clone ona's enketo repository
+        git:
+          accept_hostkey: "yes"
+          repo: "{{ enketo_remote }}"
+          dest: "{{ enketo_path }}"
+          version: "{{ git_branch }}"
+          recursive: yes
+          update: yes
+
+      - name: add upstream
+        shell: "git remote add upstream {{ enketo_upstream }}"
+        args:
+          chdir: "{{ enketo_path }}"
+
+      - name: check that upstream has been added
+        shell: "git remote -v"
+        register: upstream_result
+        args:
+          chdir: "{{ enketo_path }}"
+
+      - name: print upstream_result
+        debug:
+        msg: "Upstream repo: {{ upstream_result.stdout }}"
+
+      - include_tasks: update-enketo.yaml
+
+      when: not enketo_path_exists.stat.exists
+

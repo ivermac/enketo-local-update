@@ -1,0 +1,50 @@
+---
+- name: retrieve details of latest tag
+  shell: "{{ git_path }} describe --tags --abbrev=0"
+  register: latest_tag_locally
+  args:
+    chdir: "{{ enketo_path }}"
+
+- name: print latest enketo tag locally
+  debug:
+    msg: "Enketo's latest local tag: {{ latest_tag_locally.stdout }}"
+
+- name: print latest upstream enketo tag
+  # shell command retrieved from  `https://stackoverflow.com/questions/20734181/how-to-get-list-of-latest-tags-in-remote-git`
+  shell: "git ls-remote -t {{ enketo_upstream }} | awk '{print $2}' | cut -d '/' -f 3 | cut -d '^' -f 1  | sort -b -t . -k 1,1nr -k 2,2nr -k 3,3r -k 4,4r -k 5,5r | uniq | head -1"
+  register: latest_tag_upstream
+
+- name: print latest upstream enketo tag
+  debug:
+    msg: "Enketo's latest upstream tag locally: {{ latest_tag_upstream.stdout }}"
+
+- block:
+  - name: pull upstream changes
+    shell: "git checkout master && git fetch upstream && git rebase upstream/master"
+    args:
+      chdir: "{{ enketo_path }}"
+
+  - name: create a branch based on the latest enketo tag
+    shell: "git checkout tags/{{ latest_tag_upstream.stdout }} && git checkout -b tag-{{ latest_tag_upstream.stdout }} && git checkout {{ git_branch }}"
+    args:
+      chdir: "{{ enketo_path }}"
+
+  - block:
+    # note: you will have to fix rebase conflicts manually if they occur :-)
+    - name: rebase latest-upstream with latest tag branch
+      shell: "git rebase tag-{{ latest_tag_upstream.stdout }}"
+      args:
+        chdir: "{{ enketo_path }}"
+
+    - name: print successful update message
+      debug:
+        msg: "Aaaaaand.....we are up-to-date!!"
+
+    when: should_rebase
+
+  when: latest_tag_upstream.stdout != latest_tag_locally.stdout
+
+- name: print up-to-date message
+  debug:
+    msg: "Your local repo is up-to-date with upstream repo"
+  when: latest_tag_upstream.stdout == latest_tag_locally.stdout

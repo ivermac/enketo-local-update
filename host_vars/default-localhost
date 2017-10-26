@@ -1,0 +1,6 @@
+enketo_upstream: git@github.com:kobotoolbox/enketo-express.git
+enketo_path: ""
+enketo_remote: ""
+git_path: ""
+git_branch: ""
+should_rebase: false
