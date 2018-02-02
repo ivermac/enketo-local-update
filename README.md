@@ -15,4 +15,4 @@ Added this repo because I got tired of updating my local enketo-express repo man
     - `git_branch <string>` - branch that should be updated
     - `should_rebase <boolean>` - rebase with latest tag branch or not
 
-4. Run `ansible-playbook -i hosts -vvv main.yaml`
+4. Run `ansible-playbook -i hosts -vvv main.yaml` 
